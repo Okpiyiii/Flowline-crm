@@ -5,9 +5,11 @@ import { ViewState } from '../types';
 interface SidebarProps {
   currentView: ViewState;
   onChangeView: (view: ViewState) => void;
+  onSignOut?: () => void;
+  onAddLead?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, onSignOut, onAddLead }) => {
   const menuItems = [
     { id: 'DASHBOARD' as ViewState, icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'PIPELINE' as ViewState, icon: Kanban, label: 'Pipeline' },
@@ -25,6 +27,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView }) =
         <span className="text-sm font-semibold tracking-tight text-zinc-900">Flowline</span>
       </div>
 
+      <div className="px-3 mb-2">
+        <button
+          onClick={onAddLead}
+          className="w-full flex items-center justify-center space-x-2 bg-zinc-900 text-white rounded-md py-2 text-sm font-medium hover:bg-zinc-800 transition-colors shadow-sm"
+        >
+          {/* <Plus size={16} /> */}
+          <span>New Lead</span>
+        </button>
+      </div>
+
       <nav className="flex-1 px-3 space-y-0.5">
         {menuItems.map((item) => {
           const isActive = currentView === item.id;
@@ -32,11 +44,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView }) =
             <button
               key={item.id}
               onClick={() => onChangeView(item.id)}
-              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md transition-all duration-150 group ${
-                isActive 
-                  ? 'bg-zinc-100 text-zinc-900 font-medium' 
-                  : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50'
-              }`}
+              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md transition-all duration-150 group ${isActive
+                ? 'bg-zinc-100 text-zinc-900 font-medium'
+                : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50'
+                }`}
             >
               <item.icon size={16} className={`transition-colors ${isActive ? 'text-zinc-900' : 'text-zinc-400 group-hover:text-zinc-600'}`} />
               <span className="text-sm">{item.label}</span>
@@ -46,7 +57,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView }) =
       </nav>
 
       <div className="p-3 border-t border-zinc-100">
-        <div className="flex items-center space-x-3 p-2 rounded-md hover:bg-zinc-50 transition-colors cursor-pointer group">
+        <div
+          onClick={onSignOut}
+          className="flex items-center space-x-3 p-2 rounded-md hover:bg-zinc-50 transition-colors cursor-pointer group"
+        >
           <div className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center text-zinc-500 font-medium text-xs">
             JS
           </div>

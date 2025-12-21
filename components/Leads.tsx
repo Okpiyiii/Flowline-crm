@@ -5,13 +5,14 @@ import { Button, Badge } from './ui/GlassComponents';
 
 interface LeadsProps {
   leads: Lead[];
+  onAddLead?: () => void;
 }
 
-export const Leads: React.FC<LeadsProps> = ({ leads }) => {
+export const Leads: React.FC<LeadsProps> = ({ leads, onAddLead }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredLeads = leads.filter(l => 
-    l.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredLeads = leads.filter(l =>
+    l.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     l.company.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -19,7 +20,7 @@ export const Leads: React.FC<LeadsProps> = ({ leads }) => {
     <div className="animate-in fade-in duration-300 h-full flex flex-col">
       <div className="flex justify-between items-center mb-6 pb-2 border-b border-zinc-100">
         <h1 className="text-xl font-medium text-zinc-900">Leads</h1>
-        <Button size="sm"><Plus size={16} className="mr-1" /> Add Lead</Button>
+        <Button size="sm" onClick={onAddLead}><Plus size={16} className="mr-1" /> Add Lead</Button>
       </div>
 
       <div className="flex-1 flex flex-col bg-white border border-zinc-200 rounded-md shadow-sm overflow-hidden">
@@ -27,17 +28,17 @@ export const Leads: React.FC<LeadsProps> = ({ leads }) => {
         <div className="p-3 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
           <div className="relative w-72">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-            <input 
-              type="text" 
-              placeholder="Filter leads..." 
+            <input
+              type="text"
+              placeholder="Filter leads..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-white border border-zinc-200 rounded-md pl-9 pr-4 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-300 transition-all placeholder:text-zinc-400"
             />
           </div>
           <div className="flex space-x-2">
-             <Button variant="outline" size="sm" className="h-8"><Filter size={14} className="mr-2"/> View</Button>
-             <Button variant="outline" size="sm" className="h-8"><Download size={14} className="mr-2"/> Export</Button>
+            <Button variant="outline" size="sm" className="h-8"><Filter size={14} className="mr-2" /> View</Button>
+            <Button variant="outline" size="sm" className="h-8"><Download size={14} className="mr-2" /> Export</Button>
           </div>
         </div>
 
@@ -47,7 +48,7 @@ export const Leads: React.FC<LeadsProps> = ({ leads }) => {
             <thead className="bg-white sticky top-0 z-10 shadow-[0_1px_0_rgba(228,228,231,1)]">
               <tr>
                 <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wider w-10">
-                   <input type="checkbox" className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900" />
+                  <input type="checkbox" className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900" />
                 </th>
                 <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wider">Contact</th>
                 <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wider">Company</th>
@@ -61,7 +62,7 @@ export const Leads: React.FC<LeadsProps> = ({ leads }) => {
               {filteredLeads.map((lead) => (
                 <tr key={lead.id} className="hover:bg-zinc-50 transition-colors group">
                   <td className="px-4 py-3">
-                     <input type="checkbox" className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900" />
+                    <input type="checkbox" className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900" />
                   </td>
                   <td className="px-4 py-2.5">
                     <div className="flex items-center space-x-3">
@@ -85,8 +86,8 @@ export const Leads: React.FC<LeadsProps> = ({ leads }) => {
                   <td className="px-4 py-2.5 font-medium text-zinc-700 text-sm">${lead.value.toLocaleString()}</td>
                   <td className="px-4 py-2.5">
                     <div className="flex items-center space-x-2">
-                         <div className="w-5 h-5 rounded-full bg-zinc-100 text-zinc-600 flex items-center justify-center text-[10px] font-medium border border-zinc-200">JD</div>
-                         <span className="text-zinc-500 text-xs">John Doe</span>
+                      <div className="w-5 h-5 rounded-full bg-zinc-100 text-zinc-600 flex items-center justify-center text-[10px] font-medium border border-zinc-200">JD</div>
+                      <span className="text-zinc-500 text-xs">John Doe</span>
                     </div>
                   </td>
                   <td className="px-4 py-2.5 text-right">
@@ -99,9 +100,9 @@ export const Leads: React.FC<LeadsProps> = ({ leads }) => {
             </tbody>
           </table>
           {filteredLeads.length === 0 && (
-             <div className="flex flex-col items-center justify-center h-48 text-zinc-400">
-                <p className="text-sm">No leads found</p>
-             </div>
+            <div className="flex flex-col items-center justify-center h-48 text-zinc-400">
+              <p className="text-sm">No leads found</p>
+            </div>
           )}
         </div>
       </div>

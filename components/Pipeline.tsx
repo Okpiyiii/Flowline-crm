@@ -8,9 +8,10 @@ import { Badge, Button } from './ui/GlassComponents';
 interface PipelineProps {
   leads: Lead[];
   onUpdateLeadStatus: (id: string, newStatus: PipelineStage) => void;
+  onAddLead?: () => void;
 }
 
-export const Pipeline: React.FC<PipelineProps> = ({ leads, onUpdateLeadStatus }) => {
+export const Pipeline: React.FC<PipelineProps> = ({ leads, onUpdateLeadStatus, onAddLead }) => {
   const [draggedLead, setDraggedLead] = useState<string | null>(null);
 
   // Group leads by stage
@@ -49,8 +50,8 @@ export const Pipeline: React.FC<PipelineProps> = ({ leads, onUpdateLeadStatus })
           <h1 className="text-xl font-medium text-zinc-900">Pipeline</h1>
         </div>
         <div className="flex space-x-2">
-           <Button variant="outline" size="sm">Filter</Button>
-           <Button size="sm"><Plus size={16} className="mr-1"/> New Deal</Button>
+          <Button variant="outline" size="sm">Filter</Button>
+          <Button size="sm" onClick={onAddLead}><Plus size={16} className="mr-1" /> New Deal</Button>
         </div>
       </div>
 
@@ -61,7 +62,7 @@ export const Pipeline: React.FC<PipelineProps> = ({ leads, onUpdateLeadStatus })
             const stageValue = stageLeads.reduce((acc, lead) => acc + lead.value, 0);
 
             return (
-              <div 
+              <div
                 key={stage}
                 className="flex flex-col w-80 h-full border-r border-dashed border-zinc-200 px-3 first:pl-0 last:border-r-0"
                 onDragOver={handleDragOver}
@@ -74,9 +75,9 @@ export const Pipeline: React.FC<PipelineProps> = ({ leads, onUpdateLeadStatus })
                     <span className="text-xs text-zinc-400 bg-zinc-100 px-1.5 py-0.5 rounded text-[10px]">{stageLeads.length}</span>
                   </div>
                   {stageValue > 0 && (
-                      <div className="text-[11px] text-zinc-400">
-                        ${(stageValue / 1000).toFixed(1)}k
-                      </div>
+                    <div className="text-[11px] text-zinc-400">
+                      ${(stageValue / 1000).toFixed(1)}k
+                    </div>
                   )}
                 </div>
 
@@ -84,16 +85,16 @@ export const Pipeline: React.FC<PipelineProps> = ({ leads, onUpdateLeadStatus })
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                   <AnimatePresence>
                     {stageLeads.map((lead) => (
-                      <KanbanCard 
-                        key={lead.id} 
-                        lead={lead} 
+                      <KanbanCard
+                        key={lead.id}
+                        lead={lead}
                         isDragging={draggedLead === lead.id}
                         onDragStart={(e) => handleDragStart(e, lead.id)}
                       />
                     ))}
                   </AnimatePresence>
                   {stageLeads.length === 0 && (
-                     <div className="h-full bg-zinc-50/30 rounded-md"></div>
+                    <div className="h-full bg-zinc-50/30 rounded-md"></div>
                   )}
                 </div>
               </div>
@@ -123,12 +124,12 @@ const KanbanCard: React.FC<{ lead: Lead; onDragStart: (e: any) => void; isDraggi
           <MoreHorizontal size={14} />
         </button>
       </div>
-      
+
       <h4 className="text-sm font-medium text-zinc-900 mb-3">{lead.name}</h4>
-      
+
       <div className="flex justify-between items-center pt-2 border-t border-zinc-50">
         <Badge color={lead.value > 10000 ? 'gray' : 'gray'}>
-            ${lead.value.toLocaleString()}
+          ${lead.value.toLocaleString()}
         </Badge>
         {lead.avatar && <img src={lead.avatar} alt="Avatar" className="w-5 h-5 rounded-full grayscale opacity-70" />}
       </div>
