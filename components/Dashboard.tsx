@@ -15,24 +15,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ leads }) => {
   const wonLeads = leads.filter(l => l.status === PipelineStage.WON).length;
   const conversionRate = leads.length > 0 ? Math.round((wonLeads / leads.length) * 100) : 0;
 
-  // Mock data for charts
-  const activityData = [
-    { name: 'Mon', leads: 4 },
-    { name: 'Tue', leads: 3 },
-    { name: 'Wed', leads: 7 },
-    { name: 'Thu', leads: 2 },
-    { name: 'Fri', leads: 5 },
-    { name: 'Sat', leads: 1 },
-    { name: 'Sun', leads: 2 },
-  ];
+  const avgDealSize = leads.length > 0 ? Math.round(totalValue / leads.length) : 0;
+  // Win rate calculation (Won / Total Closed) or just Won / Total. Using Won / Total as requested implicitly
+  const winRate = leads.length > 0 ? ((wonLeads / leads.length) * 100).toFixed(1) : '0.0';
 
-  const valueByStageData = [
-    { name: 'New', value: 15000 },
-    { name: 'Contacted', value: 25000 },
-    { name: 'Qualified', value: 18000 },
-    { name: 'Proposal', value: 45000 },
-    { name: 'Won', value: 32000 },
-  ];
+  // Dynamic Chart Data: Lead Acquisition (Last 7 Days)
+  const activityData = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    const dateStr = d.toISOString().split('T')[0];
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+
+    const count = leads.filter(l => l.createdAt && l.createdAt.startsWith(dateStr)).length;
+    return { name: dayName, leads: count };
+  });
+
+  // Dynamic Chart Data: Value by Stage
+  const valueByStageData = Object.values(PipelineStage).map(stage => {
+    const value = leads
+      .filter(l => l.status === stage)
+      .reduce((sum, l) => sum + l.value, 0);
+    return { name: stage, value };
+  });
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -125,11 +129,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ leads }) => {
       <div className="grid grid-cols-2 gap-4">
         <GlassCard className="flex flex-col justify-center">
           <h3 className="text-sm font-medium text-zinc-500 mb-1">Avg. Deal Size</h3>
-          <p className="text-2xl font-medium text-zinc-900 tracking-tight">$12,450</p>
+          <p className="text-2xl font-medium text-zinc-900 tracking-tight">${avgDealSize.toLocaleString()}</p>
         </GlassCard>
         <GlassCard className="flex flex-col justify-center">
           <h3 className="text-sm font-medium text-zinc-500 mb-1">Win Rate</h3>
-          <p className="text-2xl font-medium text-zinc-900 tracking-tight">32.4%</p>
+          <p className="text-2xl font-medium text-zinc-900 tracking-tight">{winRate}%</p>
         </GlassCard>
       </div>
     </div>

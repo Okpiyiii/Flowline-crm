@@ -18,6 +18,7 @@ const Workspace: React.FC = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -50,7 +51,7 @@ const Workspace: React.FC = () => {
 
       const { data, error } = await supabase
         .from('leads')
-        .select('*');
+        .select('*, createdAt:created_at');
 
       if (error) {
         console.error('Error fetching leads:', error);
@@ -83,26 +84,69 @@ const Workspace: React.FC = () => {
     }
   };
 
-  const handleAddLead = async (leadData: any) => {
+  const handleSubmitLead = async (leadData: any) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const newLead = {
-      ...leadData,
-      user_id: user.id
-    };
+    if (leadData.id) {
+      // Update existing
+      const { error } = await supabase
+        .from('leads')
+        .update({
+          name: leadData.name,
+          company: leadData.company,
+          email: leadData.email,
+          value: leadData.value,
+          status: leadData.status
+        })
+        .eq('id', leadData.id);
 
-    const { data, error } = await supabase
+      if (error) throw error;
+
+      setLeads(prev => prev.map(l => l.id === leadData.id ? { ...l, ...leadData } : l));
+    } else {
+      // Create new
+      const newLead = {
+        ...leadData,
+        user_id: user.id
+      };
+
+      const { data, error } = await supabase
+        .from('leads')
+        .insert(newLead)
+        .select('*, createdAt:created_at')
+        .single();
+
+      if (error) throw error;
+      setLeads(prev => [...prev, data as unknown as Lead]);
+    }
+    setEditingLead(null);
+  };
+
+  const handleDeleteLead = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this lead?')) return;
+
+    const { error } = await supabase
       .from('leads')
-      .insert(newLead)
-      .select()
-      .single();
+      .delete()
+      .eq('id', id);
 
     if (error) {
-      throw error;
+      console.error('Error deleting lead:', error);
+      return;
     }
 
-    setLeads(prev => [...prev, data as unknown as Lead]);
+    setLeads(prev => prev.filter(l => l.id !== id));
+  };
+
+  const openEditModal = (lead: Lead) => {
+    setEditingLead(lead);
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsCreateModalOpen(false);
+    setEditingLead(null);
   };
 
   const handleSignOut = async () => {
@@ -123,9 +167,24 @@ const Workspace: React.FC = () => {
       case 'DASHBOARD':
         return <Dashboard leads={leads} />;
       case 'PIPELINE':
-        return <Pipeline leads={leads} onUpdateLeadStatus={handleUpdateLeadStatus} onAddLead={() => setIsCreateModalOpen(true)} />;
+        return (
+          <Pipeline
+            leads={leads}
+            onUpdateLeadStatus={handleUpdateLeadStatus}
+            onAddLead={() => setIsCreateModalOpen(true)}
+            onEditLead={openEditModal}
+            onDeleteLead={handleDeleteLead}
+          />
+        );
       case 'LEADS':
-        return <Leads leads={leads} onAddLead={() => setIsCreateModalOpen(true)} />;
+        return (
+          <Leads
+            leads={leads}
+            onAddLead={() => setIsCreateModalOpen(true)}
+            onEditLead={openEditModal}
+            onDeleteLead={handleDeleteLead}
+          />
+        );
       case 'BILLING':
         return <Billing />;
       case 'SETTINGS':
@@ -152,8 +211,9 @@ const Workspace: React.FC = () => {
 
       <CreateLeadModal
         isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleAddLead}
+        onClose={handleCloseModal}
+        onSubmit={handleSubmitLead}
+        initialData={editingLead}
       />
     </div>
   );

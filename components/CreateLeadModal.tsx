@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2 } from 'lucide-react';
-import { PipelineStage } from '../types';
+import { Lead, PipelineStage } from '../types';
 
 interface CreateLeadModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (lead: any) => Promise<void>;
+    initialData?: Lead | null;
 }
 
-export const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClose, onSubmit }) => {
+export const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClose, onSubmit, initialData }) => {
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
@@ -19,6 +20,26 @@ export const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClos
         status: PipelineStage.NEW,
     });
 
+    React.useEffect(() => {
+        if (initialData) {
+            setFormData({
+                name: initialData.name,
+                company: initialData.company,
+                email: initialData.email,
+                value: String(initialData.value),
+                status: initialData.status,
+            });
+        } else {
+            setFormData({
+                name: '',
+                company: '',
+                email: '',
+                value: '',
+                status: PipelineStage.NEW,
+            });
+        }
+    }, [initialData, isOpen]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -26,6 +47,7 @@ export const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClos
             await onSubmit({
                 ...formData,
                 value: Number(formData.value) || 0,
+                id: initialData?.id
             });
             // Reset form
             setFormData({
@@ -62,7 +84,7 @@ export const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClos
                             className="relative w-full max-w-md bg-white rounded-xl shadow-2xl border border-zinc-100 p-6 pointer-events-auto"
                         >
                             <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-lg font-semibold text-zinc-900">New Lead</h2>
+                                <h2 className="text-lg font-semibold text-zinc-900">{initialData ? 'Edit Lead' : 'New Lead'}</h2>
                                 <button onClick={onClose} className="text-zinc-400 hover:text-zinc-700 transition-colors">
                                     <X size={20} />
                                 </button>
@@ -143,7 +165,7 @@ export const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClos
                                         className="px-4 py-2 text-sm font-medium bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors shadow-sm disabled:opacity-70 flex items-center"
                                     >
                                         {loading && <Loader2 size={14} className="animate-spin mr-2" />}
-                                        Create
+                                        {initialData ? 'Save Changes' : 'Create'}
                                     </button>
                                 </div>
                             </form>

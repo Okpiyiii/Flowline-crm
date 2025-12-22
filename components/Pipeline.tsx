@@ -9,9 +9,11 @@ interface PipelineProps {
   leads: Lead[];
   onUpdateLeadStatus: (id: string, newStatus: PipelineStage) => void;
   onAddLead?: () => void;
+  onEditLead?: (lead: Lead) => void;
+  onDeleteLead?: (id: string) => void;
 }
 
-export const Pipeline: React.FC<PipelineProps> = ({ leads, onUpdateLeadStatus, onAddLead }) => {
+export const Pipeline: React.FC<PipelineProps> = ({ leads, onUpdateLeadStatus, onAddLead, onEditLead, onDeleteLead }) => {
   const [draggedLead, setDraggedLead] = useState<string | null>(null);
 
   // Group leads by stage
@@ -90,6 +92,8 @@ export const Pipeline: React.FC<PipelineProps> = ({ leads, onUpdateLeadStatus, o
                         lead={lead}
                         isDragging={draggedLead === lead.id}
                         onDragStart={(e) => handleDragStart(e, lead.id)}
+                        onEdit={() => onEditLead?.(lead)}
+                        onDelete={() => onDeleteLead?.(lead.id)}
                       />
                     ))}
                   </AnimatePresence>
@@ -106,7 +110,15 @@ export const Pipeline: React.FC<PipelineProps> = ({ leads, onUpdateLeadStatus, o
   );
 };
 
-const KanbanCard: React.FC<{ lead: Lead; onDragStart: (e: any) => void; isDragging: boolean }> = ({ lead, onDragStart, isDragging }) => {
+const KanbanCard: React.FC<{
+  lead: Lead;
+  onDragStart: (e: any) => void;
+  isDragging: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
+}> = ({ lead, onDragStart, isDragging, onEdit, onDelete }) => {
+  const [showDropdown, setShowDropdown] = useState(false);
+
   return (
     <motion.div
       layout
@@ -116,13 +128,35 @@ const KanbanCard: React.FC<{ lead: Lead; onDragStart: (e: any) => void; isDraggi
       transition={{ type: 'tween', duration: 0.15 }}
       draggable
       onDragStart={onDragStart}
-      className={`bg-white p-3 rounded-md border border-zinc-200 shadow-sm mb-3 cursor-grab active:cursor-grabbing hover:border-zinc-300 hover:shadow-md transition-all group`}
+      className={`bg-white p-3 rounded-md border border-zinc-200 shadow-sm mb-3 cursor-grab active:cursor-grabbing hover:border-zinc-300 hover:shadow-md transition-all group relative`}
+      onMouseLeave={() => setShowDropdown(false)}
     >
       <div className="flex justify-between items-start mb-1.5">
         <span className="text-xs font-medium text-zinc-500">{lead.company}</span>
-        <button className="text-zinc-300 hover:text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity">
-          <MoreHorizontal size={14} />
-        </button>
+        <div className="relative">
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowDropdown(!showDropdown); }}
+            className="text-zinc-300 hover:text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity p-1"
+          >
+            <MoreHorizontal size={14} />
+          </button>
+          {showDropdown && (
+            <div className="absolute right-0 top-full mt-1 w-24 bg-white border border-zinc-200 rounded shadow-lg z-50 py-1 flex flex-col">
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowDropdown(false); onEdit?.(); }}
+                className="text-left px-3 py-1.5 text-xs text-zinc-700 hover:bg-zinc-50 transition-colors w-full"
+              >
+                Edit
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowDropdown(false); onDelete?.(); }}
+                className="text-left px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 transition-colors w-full"
+              >
+                Delete
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <h4 className="text-sm font-medium text-zinc-900 mb-3">{lead.name}</h4>

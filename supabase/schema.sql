@@ -78,3 +78,37 @@ create policy "Users can delete their own stages." on public.pipeline_stages
 
 -- Set up Realtime for leads (optional, but requested in "future" list, good to have)
 alter publication supabase_realtime add table public.leads;
+
+-- Function to handle new user signup
+create or replace function public.handle_new_user() 
+returns trigger as $$
+begin
+  insert into public.profiles (id, full_name, avatar_url)
+  values (new.id, new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'avatar_url');
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- Trigger for new user signup
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
+-- Seed default pipeline stages (Run this once)
+insert into public.pipeline_stages (user_id, name, "order")
+select 
+  auth.uid(), 
+  s.name, 
+  s.ord 
+from 
+  (values 
+    ('New', 1), 
+    ('Contacted', 2), 
+    ('Qualified', 3), 
+    ('Proposal', 4), 
+    ('Won', 5), 
+    ('Lost', 6)
+  ) as s(name, ord)
+where auth.uid() is not null; -- Note: This insert only works if run as a logged-in user or modified to specific UIDs
+-- Alternative: Since we don't have a reliable auth.uid() in migration script, we rely on app logic or manual insert
+-- For now, let's keep the table definition. The triggers are the most critical part for profiles.

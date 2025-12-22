@@ -6,9 +6,11 @@ import { Button, Badge } from './ui/GlassComponents';
 interface LeadsProps {
   leads: Lead[];
   onAddLead?: () => void;
+  onEditLead?: (lead: Lead) => void;
+  onDeleteLead?: (id: string) => void;
 }
 
-export const Leads: React.FC<LeadsProps> = ({ leads, onAddLead }) => {
+export const Leads: React.FC<LeadsProps> = ({ leads, onAddLead, onEditLead, onDeleteLead }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredLeads = leads.filter(l =>
@@ -60,42 +62,12 @@ export const Leads: React.FC<LeadsProps> = ({ leads, onAddLead }) => {
             </thead>
             <tbody className="divide-y divide-zinc-100 bg-white">
               {filteredLeads.map((lead) => (
-                <tr key={lead.id} className="hover:bg-zinc-50 transition-colors group">
-                  <td className="px-4 py-3">
-                    <input type="checkbox" className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900" />
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <div className="flex items-center space-x-3">
-                      {lead.avatar ? (
-                        <img src={lead.avatar} alt="" className="w-6 h-6 rounded-full grayscale opacity-80" />
-                      ) : (
-                        <div className="w-6 h-6 rounded-full bg-zinc-100"></div>
-                      )}
-                      <div>
-                        <div className="font-medium text-zinc-900 text-sm">{lead.name}</div>
-                        <div className="text-xs text-zinc-400">{lead.email}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-2.5 text-zinc-600">{lead.company}</td>
-                  <td className="px-4 py-2.5">
-                    <Badge color={lead.status === 'Won' ? 'green' : lead.status === 'Lost' ? 'red' : 'gray'}>
-                      {lead.status}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-2.5 font-medium text-zinc-700 text-sm">${lead.value.toLocaleString()}</td>
-                  <td className="px-4 py-2.5">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-5 h-5 rounded-full bg-zinc-100 text-zinc-600 flex items-center justify-center text-[10px] font-medium border border-zinc-200">JD</div>
-                      <span className="text-zinc-500 text-xs">John Doe</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-2.5 text-right">
-                    <button className="text-zinc-300 hover:text-zinc-600 opacity-0 group-hover:opacity-100 transition-all p-1">
-                      <MoreHorizontal size={14} />
-                    </button>
-                  </td>
-                </tr>
+                <LeadRow
+                  key={lead.id}
+                  lead={lead}
+                  onEdit={() => onEditLead?.(lead)}
+                  onDelete={() => onDeleteLead?.(lead.id)}
+                />
               ))}
             </tbody>
           </table>
@@ -107,5 +79,67 @@ export const Leads: React.FC<LeadsProps> = ({ leads, onAddLead }) => {
         </div>
       </div>
     </div>
+  );
+};
+
+const LeadRow: React.FC<{ lead: Lead; onEdit?: () => void; onDelete?: () => void }> = ({ lead, onEdit, onDelete }) => {
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  return (
+    <tr className="hover:bg-zinc-50 transition-colors group relative" onMouseLeave={() => setShowDropdown(false)}>
+      <td className="px-4 py-3">
+        <input type="checkbox" className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900" />
+      </td>
+      <td className="px-4 py-2.5">
+        <div className="flex items-center space-x-3">
+          {lead.avatar ? (
+            <img src={lead.avatar} alt="" className="w-6 h-6 rounded-full grayscale opacity-80" />
+          ) : (
+            <div className="w-6 h-6 rounded-full bg-zinc-100"></div>
+          )}
+          <div>
+            <div className="font-medium text-zinc-900 text-sm">{lead.name}</div>
+            <div className="text-xs text-zinc-400">{lead.email}</div>
+          </div>
+        </div>
+      </td>
+      <td className="px-4 py-2.5 text-zinc-600">{lead.company}</td>
+      <td className="px-4 py-2.5">
+        <Badge color={lead.status === 'Won' ? 'green' : lead.status === 'Lost' ? 'red' : 'gray'}>
+          {lead.status}
+        </Badge>
+      </td>
+      <td className="px-4 py-2.5 font-medium text-zinc-700 text-sm">${lead.value.toLocaleString()}</td>
+      <td className="px-4 py-2.5">
+        <div className="flex items-center space-x-2">
+          <div className="w-5 h-5 rounded-full bg-zinc-100 text-zinc-600 flex items-center justify-center text-[10px] font-medium border border-zinc-200">JD</div>
+          <span className="text-zinc-500 text-xs">John Doe</span>
+        </div>
+      </td>
+      <td className="px-4 py-2.5 text-right relative">
+        <button
+          onClick={(e) => { e.stopPropagation(); setShowDropdown(!showDropdown); }}
+          className="text-zinc-300 hover:text-zinc-600 opacity-0 group-hover:opacity-100 transition-all p-1"
+        >
+          <MoreHorizontal size={14} />
+        </button>
+        {showDropdown && (
+          <div className="absolute right-0 top-full mt-1 w-24 bg-white border border-zinc-200 rounded shadow-lg z-50 py-1 flex flex-col text-left">
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowDropdown(false); onEdit?.(); }}
+              className="text-left px-3 py-1.5 text-xs text-zinc-700 hover:bg-zinc-50 transition-colors w-full"
+            >
+              Edit
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowDropdown(false); onDelete?.(); }}
+              className="text-left px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 transition-colors w-full"
+            >
+              Delete
+            </button>
+          </div>
+        )}
+      </td>
+    </tr>
   );
 };
