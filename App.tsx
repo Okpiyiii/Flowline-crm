@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { supabase } from './src/lib/supabase';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
@@ -251,16 +252,19 @@ const Workspace: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<Auth mode="LOGIN" />} />
-        <Route path="/signup" element={<Auth mode="SIGNUP" />} />
-        <Route path="/app/*" element={<Workspace />} />
-        {/* Redirect unknown routes to landing */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
+    <>
+      <Router>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<Auth mode="LOGIN" />} />
+          <Route path="/signup" element={<Auth mode="SIGNUP" />} />
+          <Route path="/app/*" element={<Workspace />} />
+          {/* Redirect unknown routes to landing */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+      <Analytics />
+    </>
   );
 };
 
