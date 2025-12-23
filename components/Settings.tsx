@@ -97,17 +97,51 @@ export const Settings: React.FC = () => {
           <h3 className="font-medium text-zinc-900 mb-6 flex items-center"><User size={16} className="mr-2 text-zinc-500" /> Profile</h3>
           <div className="flex items-start space-x-6">
             <div className="relative group cursor-pointer shrink-0">
-              {/* Fallback avatar */}
-              <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center ring-1 ring-zinc-200 overflow-hidden">
-                {formData.avatar_url ? (
+              {/* Avatar Display */}
+              <div className="w-20 h-20 rounded-full bg-zinc-100 flex items-center justify-center ring-1 ring-zinc-200 overflow-hidden text-3xl">
+                {formData.avatar_url && formData.avatar_url.startsWith('http') ? (
                   <img src={formData.avatar_url} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
-                  <User className="text-zinc-400" size={32} />
+                  formData.avatar_url || <User className="text-zinc-400" size={32} />
                 )}
               </div>
-              {/* <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span className="text-xs text-white">Edit</span>
-                </div> */}
+
+              {/* Overlay Options */}
+              <div className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity gap-2 backdrop-blur-[2px]">
+                <label className="cursor-pointer text-[10px] text-white font-medium hover:text-blue-400 transition-colors bg-white/10 px-2 py-1 rounded">
+                  Upload
+                  <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                    if (!e.target.files || e.target.files.length === 0) return;
+                    const file = e.target.files[0];
+                    try {
+                      setSaving(true);
+                      const fileExt = file.name.split('.').pop();
+                      const fileName = `${Math.random()}.${fileExt}`;
+                      const filePath = `${fileName}`;
+
+                      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file);
+                      if (uploadError) throw uploadError;
+
+                      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
+                      setFormData(prev => ({ ...prev, avatar_url: publicUrl }));
+                    } catch (error) {
+                      console.error('Error uploading image:', error);
+                      alert('Error uploading image');
+                    } finally {
+                      setSaving(false);
+                    }
+                  }} />
+                </label>
+                <button
+                  onClick={() => {
+                    const emoji = prompt('Enter an emoji:');
+                    if (emoji) setFormData(prev => ({ ...prev, avatar_url: emoji }));
+                  }}
+                  className="text-[10px] text-white font-medium hover:text-blue-400 transition-colors bg-white/10 px-2 py-1 rounded"
+                >
+                  Emoji
+                </button>
+              </div>
             </div>
             <div className="flex-1 space-y-4">
               <div className="grid grid-cols-1 gap-4">
