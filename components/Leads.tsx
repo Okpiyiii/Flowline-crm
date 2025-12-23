@@ -1,28 +1,131 @@
-import React, { useState } from 'react';
-import { Search, Filter, MoreHorizontal, Plus, Download } from 'lucide-react';
-import { Lead } from '../types';
+import React, { useState, useRef } from 'react';
+import { Search, Filter, MoreHorizontal, Plus, Download, Upload, Loader2, Check } from 'lucide-react';
+import { Lead, PipelineStage } from '../types';
 import { Button, Badge } from './ui/GlassComponents';
+import Papa from 'papaparse';
+import { supabase } from '../src/lib/supabase';
 
 interface LeadsProps {
   leads: Lead[];
   onAddLead?: () => void;
   onEditLead?: (lead: Lead) => void;
   onDeleteLead?: (id: string) => void;
+  onUpdateLeadStatus?: (id: string, status: PipelineStage) => void;
 }
 
-export const Leads: React.FC<LeadsProps> = ({ leads, onAddLead, onEditLead, onDeleteLead }) => {
+export const Leads: React.FC<LeadsProps> = ({ leads, onAddLead, onEditLead, onDeleteLead, onUpdateLeadStatus }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
+  const [importSuccess, setImportSuccess] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredLeads = leads.filter(l =>
     l.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     l.company.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleExport = () => {
+    // Basic CSV Export
+    const csv = Papa.unparse(leads.map(l => ({
+      Name: l.name,
+      Company: l.company,
+      Email: l.email,
+      Phone: l.phone,
+      Value: l.value,
+      Status: l.status,
+      Source: l.source,
+      Created: l.createdAt
+    })));
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `leads_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    Papa.parse(file, {
+      header: true,
+      complete: async (results) => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) throw new Error('Not authenticated');
+
+          const newLeads = results.data.map((row: any) => {
+            if (!row.Name) return null; // Skip empty rows
+            return {
+              user_id: user.id,
+              name: row.Name || row.name || 'Unknown',
+              company: row.Company || row.company || '',
+              email: row.Email || row.email || '',
+              phone: row.Phone || row.phone || '',
+              value: parseFloat(row.Value || row.value || '0'),
+              status: row.Status || row.status || 'New',
+              source: 'Import'
+            };
+          }).filter(l => l !== null);
+
+          if (newLeads.length > 0) {
+            const { error } = await supabase.from('leads').insert(newLeads);
+            if (error) throw error;
+            setImportSuccess(`Imported ${newLeads.length} leads successfully!`);
+            setTimeout(() => setImportSuccess(null), 3000);
+            // Trigger a refresh somehow? The App component subscribes to realtime, so it might just work if we rely on that.
+            // If not, we might need a manual refresh callback. For now, let's assume realtime or manual reload.
+            // Actually, App.tsx fetches leads. Realtime might pick it up.
+          }
+        } catch (error) {
+          console.error('Import error:', error);
+          alert('Error importing leads. Check console for details.');
+        } finally {
+          setIsImporting(false);
+          if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+      }
+    });
+  };
+
   return (
     <div className="animate-in fade-in duration-300 h-full flex flex-col">
       <div className="flex justify-between items-center mb-6 pb-2 border-b border-zinc-100">
-        <h1 className="text-xl font-medium text-zinc-900">Leads</h1>
-        <Button size="sm" onClick={onAddLead}><Plus size={16} className="mr-1" /> Add Lead</Button>
+        <div className="flex items-center space-x-4">
+          <h1 className="text-xl font-medium text-zinc-900">Leads</h1>
+          {importSuccess && (
+            <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full flex items-center animate-in fade-in">
+              <Check size={12} className="mr-1" /> {importSuccess}
+            </span>
+          )}
+        </div>
+
+        <div className="flex space-x-2">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            className="hidden"
+            accept=".csv"
+          />
+          <Button variant="outline" size="sm" onClick={handleImportClick} disabled={isImporting}>
+            {isImporting ? <Loader2 size={16} className="animate-spin mr-1" /> : <Upload size={16} className="mr-1" />}
+            Import
+          </Button>
+          <Button size="sm" onClick={onAddLead}><Plus size={16} className="mr-1" /> Add Lead</Button>
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col bg-white border border-zinc-200 rounded-md shadow-sm overflow-hidden">
@@ -40,7 +143,7 @@ export const Leads: React.FC<LeadsProps> = ({ leads, onAddLead, onEditLead, onDe
           </div>
           <div className="flex space-x-2">
             <Button variant="outline" size="sm" className="h-8"><Filter size={14} className="mr-2" /> View</Button>
-            <Button variant="outline" size="sm" className="h-8"><Download size={14} className="mr-2" /> Export</Button>
+            <Button variant="outline" size="sm" className="h-8" onClick={handleExport}><Download size={14} className="mr-2" /> Export</Button>
           </div>
         </div>
 
@@ -65,6 +168,7 @@ export const Leads: React.FC<LeadsProps> = ({ leads, onAddLead, onEditLead, onDe
                 <LeadRow
                   key={lead.id}
                   lead={lead}
+                  onStatusChange={(status) => onUpdateLeadStatus?.(lead.id, status)}
                   onEdit={() => onEditLead?.(lead)}
                   onDelete={() => onDeleteLead?.(lead.id)}
                 />
@@ -82,11 +186,13 @@ export const Leads: React.FC<LeadsProps> = ({ leads, onAddLead, onEditLead, onDe
   );
 };
 
-const LeadRow: React.FC<{ lead: Lead; onEdit?: () => void; onDelete?: () => void }> = ({ lead, onEdit, onDelete }) => {
+const LeadRow: React.FC<{ lead: Lead; onStatusChange?: (s: PipelineStage) => void; onEdit?: () => void; onDelete?: () => void }> = ({ lead, onStatusChange, onEdit, onDelete }) => {
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const statusOptions: PipelineStage[] = ['New', 'Contacted', 'Qualified', 'Proposal', 'Won', 'Lost'];
 
   return (
-    <tr className="hover:bg-zinc-50 transition-colors group relative" onMouseLeave={() => setShowDropdown(false)}>
+    <tr className="hover:bg-zinc-50 transition-colors group relative" onMouseLeave={() => { setShowDropdown(false); setShowStatusDropdown(false); }}>
       <td className="px-4 py-3">
         <input type="checkbox" className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900" />
       </td>
@@ -104,10 +210,34 @@ const LeadRow: React.FC<{ lead: Lead; onEdit?: () => void; onDelete?: () => void
         </div>
       </td>
       <td className="px-4 py-2.5 text-zinc-600">{lead.company}</td>
-      <td className="px-4 py-2.5">
-        <Badge color={lead.status === 'Won' ? 'green' : lead.status === 'Lost' ? 'red' : 'gray'}>
-          {lead.status}
-        </Badge>
+      <td className="px-4 py-2.5 relative">
+        <div
+          onClick={(e) => { e.stopPropagation(); setShowStatusDropdown(!showStatusDropdown); }}
+          className="cursor-pointer hover:opacity-80 transition-opacity inline-block"
+        >
+          <Badge color={lead.status === 'Won' ? 'green' : lead.status === 'Lost' ? 'red' : 'gray'}>
+            {lead.status}
+          </Badge>
+        </div>
+
+        {showStatusDropdown && (
+          <div className="absolute left-0 top-full mt-1 w-32 bg-white border border-zinc-200 rounded shadow-lg z-50 py-1 flex flex-col text-left animate-in fade-in zoom-in-95 duration-100">
+            {statusOptions.map(option => (
+              <button
+                key={option}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onStatusChange?.(option);
+                  setShowStatusDropdown(false);
+                }}
+                className={`text-left px-3 py-1.5 text-xs hover:bg-zinc-50 transition-colors w-full flex items-center ${lead.status === option ? 'font-medium text-blue-600 bg-blue-50' : 'text-zinc-700'}`}
+              >
+                {lead.status === option && <Check size={10} className="mr-1.5" />}
+                {option}
+              </button>
+            ))}
+          </div>
+        )}
       </td>
       <td className="px-4 py-2.5 font-medium text-zinc-700 text-sm">${lead.value.toLocaleString()}</td>
       <td className="px-4 py-2.5">

@@ -180,6 +180,7 @@ const Workspace: React.FC = () => {
         return (
           <Leads
             leads={leads}
+            onUpdateLeadStatus={handleUpdateLeadStatus}
             onAddLead={() => setIsCreateModalOpen(true)}
             onEditLead={openEditModal}
             onDeleteLead={handleDeleteLead}

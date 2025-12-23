@@ -94,6 +94,26 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
+-- STORAGE BUCKET setup (Run this in SQL Editor)
+-- Create a new bucket called 'avatars'
+insert into storage.buckets (id, name, public) 
+values ('avatars', 'avatars', true);
+
+-- Policy to allow public access to avatars
+create policy "Avatar images are publicly accessible."
+  on storage.objects for select
+  using ( bucket_id = 'avatars' );
+
+-- Policy to allow authenticated users to upload avatars
+create policy "Anyone can upload an avatar."
+  on storage.objects for insert
+  with check ( bucket_id = 'avatars' and auth.role() = 'authenticated' );
+
+-- Policy to allow users to update their own avatar
+create policy "Users can update their own avatar."
+  on storage.objects for update
+  using ( bucket_id = 'avatars' and auth.uid() = owner );
+
 -- Seed default pipeline stages (Run this once)
 insert into public.pipeline_stages (user_id, name, "order")
 select 
