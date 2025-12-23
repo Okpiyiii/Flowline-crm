@@ -5,6 +5,7 @@ import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { Pipeline } from './components/Pipeline';
 import { Leads } from './components/Leads';
+import { Tasks } from './components/Tasks';
 import { Billing } from './components/Billing';
 import { Settings } from './components/Settings';
 import { LandingPage } from './components/LandingPage';
@@ -13,13 +14,28 @@ import { CreateLeadModal } from './components/CreateLeadModal';
 import { Lead, PipelineStage, ViewState } from './types';
 import { Loader2 } from 'lucide-react';
 
+import { SearchOverlay } from './components/SearchOverlay';
+
 const Workspace: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>('DASHBOARD');
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     // Check initial session
@@ -186,6 +202,8 @@ const Workspace: React.FC = () => {
             onDeleteLead={handleDeleteLead}
           />
         );
+      case 'TASKS':
+        return <Tasks leads={leads} />;
       case 'BILLING':
         return <Billing />;
       case 'SETTINGS':
@@ -202,6 +220,7 @@ const Workspace: React.FC = () => {
         onChangeView={setCurrentView}
         onSignOut={handleSignOut}
         onAddLead={() => setIsCreateModalOpen(true)}
+        onSearchClick={() => setIsSearchOpen(true)}
       />
 
       <main className="flex-1 overflow-y-auto h-screen relative">
@@ -215,6 +234,16 @@ const Workspace: React.FC = () => {
         onClose={handleCloseModal}
         onSubmit={handleSubmitLead}
         initialData={editingLead}
+      />
+
+      <SearchOverlay
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        onNavigate={(view, id) => {
+          setCurrentView(view);
+          // In a real app we might pass the 'id' to focus/open the item.
+          // For now, we just switch views.
+        }}
       />
     </div>
   );

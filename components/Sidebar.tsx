@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { LayoutDashboard, Kanban, Users, CreditCard, Settings, LogOut, Command, User } from 'lucide-react';
+import { LayoutDashboard, Kanban, Users, CreditCard, Settings, LogOut, Command, User, CheckSquare } from 'lucide-react';
 import { ViewState } from '../types';
 import { supabase } from '../src/lib/supabase';
 
@@ -8,9 +8,10 @@ interface SidebarProps {
   onChangeView: (view: ViewState) => void;
   onSignOut?: () => void;
   onAddLead?: () => void;
+  onSearchClick: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, onSignOut, onAddLead }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, onSignOut, onAddLead, onSearchClick }) => {
   const [profile, setProfile] = useState<{ full_name: string | null, avatar_url: string | null }>({ full_name: 'Loading...', avatar_url: null });
 
   useEffect(() => {
@@ -28,17 +29,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, onS
     { id: 'DASHBOARD' as ViewState, icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'PIPELINE' as ViewState, icon: Kanban, label: 'Pipeline' },
     { id: 'LEADS' as ViewState, icon: Users, label: 'Leads' },
+    { id: 'TASKS' as ViewState, icon: CheckSquare, label: 'Tasks' },
     { id: 'BILLING' as ViewState, icon: CreditCard, label: 'Billing' },
     { id: 'SETTINGS' as ViewState, icon: Settings, label: 'Settings' },
   ];
 
   return (
     <aside className="w-60 h-screen sticky top-0 flex flex-col border-r border-zinc-200 bg-white z-50">
-      <div className="p-4 flex items-center space-x-3 mb-2">
-        <div className="w-6 h-6 rounded bg-zinc-900 flex items-center justify-center text-white">
-          <Command size={14} />
+      <div className="p-4 mb-2">
+        <div className="flex items-center space-x-2 mb-4 px-1">
+          <div className="w-6 h-6 rounded bg-zinc-900 flex items-center justify-center text-white">
+            <Command size={14} />
+          </div>
+          <span className="text-sm font-semibold tracking-tight text-zinc-900">Flowline</span>
         </div>
-        <span className="text-sm font-semibold tracking-tight text-zinc-900">Flowline</span>
+
+        <button
+          onClick={onSearchClick}
+          className="w-full flex items-center justify-between px-3 py-1.5 bg-zinc-50 border border-zinc-200/50 rounded-md text-sm text-zinc-500 hover:bg-zinc-100 hover:border-zinc-300 transition-all group shadow-sm"
+        >
+          <div className="flex items-center space-x-2">
+            <Command size={14} className="text-zinc-400 group-hover:text-zinc-600" />
+            <span>Search...</span>
+          </div>
+          <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] text-zinc-400 border border-zinc-200 rounded bg-white font-sans">⌘K</kbd>
+        </button>
       </div>
 
       <div className="px-3 mb-2">

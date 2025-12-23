@@ -90,6 +90,7 @@ end;
 $$ language plpgsql security definer;
 
 -- Trigger for new user signup
+drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
@@ -97,19 +98,23 @@ create trigger on_auth_user_created
 -- STORAGE BUCKET setup (Run this in SQL Editor)
 -- Create a new bucket called 'avatars'
 insert into storage.buckets (id, name, public) 
-values ('avatars', 'avatars', true);
+values ('avatars', 'avatars', true)
+on conflict (id) do nothing;
 
 -- Policy to allow public access to avatars
+drop policy if exists "Avatar images are publicly accessible." on storage.objects;
 create policy "Avatar images are publicly accessible."
   on storage.objects for select
   using ( bucket_id = 'avatars' );
 
 -- Policy to allow authenticated users to upload avatars
+drop policy if exists "Anyone can upload an avatar." on storage.objects;
 create policy "Anyone can upload an avatar."
   on storage.objects for insert
   with check ( bucket_id = 'avatars' and auth.role() = 'authenticated' );
 
 -- Policy to allow users to update their own avatar
+drop policy if exists "Users can update their own avatar." on storage.objects;
 create policy "Users can update their own avatar."
   on storage.objects for update
   using ( bucket_id = 'avatars' and auth.uid() = owner );
@@ -129,6 +134,38 @@ from
     ('Won', 5), 
     ('Lost', 6)
   ) as s(name, ord)
-where auth.uid() is not null; -- Note: This insert only works if run as a logged-in user or modified to specific UIDs
--- Alternative: Since we don't have a reliable auth.uid() in migration script, we rely on app logic or manual insert
--- For now, let's keep the table definition. The triggers are the most critical part for profiles.
+where auth.uid() is not null; 
+
+-- Create a table for tasks
+create table if not exists public.tasks (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users not null,
+  title text not null,
+  description text,
+  status text not null check (status in ('To do', 'In progress', 'Waiting', 'Done')),
+  priority text check (priority in ('Low', 'Medium', 'High')),
+  due_date timestamp with time zone,
+  owner_email text,
+  related_lead_id uuid references public.leads(id) on delete set null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  completed_at timestamp with time zone
+);
+
+alter table public.tasks enable row level security;
+
+drop policy if exists "Users can view their own tasks." on public.tasks;
+create policy "Users can view their own tasks." on public.tasks
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "Users can insert their own tasks." on public.tasks;
+create policy "Users can insert their own tasks." on public.tasks
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "Users can update their own tasks." on public.tasks;
+create policy "Users can update their own tasks." on public.tasks
+  for update using (auth.uid() = user_id);
+
+drop policy if exists "Users can delete their own tasks." on public.tasks;
+create policy "Users can delete their own tasks." on public.tasks
+  for delete using (auth.uid() = user_id);
