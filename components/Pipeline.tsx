@@ -26,11 +26,6 @@ export const Pipeline: React.FC<PipelineProps> = ({ leads, onUpdateLeadStatus, o
   const handleDragStart = (e: React.DragEvent, id: string) => {
     setDraggedLead(id);
     e.dataTransfer.effectAllowed = 'move';
-    const ghost = document.createElement('div');
-    ghost.style.opacity = '0';
-    document.body.appendChild(ghost);
-    e.dataTransfer.setDragImage(ghost, 0, 0);
-    setTimeout(() => document.body.removeChild(ghost), 0);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
