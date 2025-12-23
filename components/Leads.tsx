@@ -75,7 +75,7 @@ export const Leads: React.FC<LeadsProps> = ({ leads, onAddLead, onEditLead, onDe
               email: row.Email || row.email || '',
               phone: row.Phone || row.phone || '',
               value: parseFloat(row.Value || row.value || '0'),
-              status: row.Status || row.status || 'New',
+              status: (row.Status || row.status || PipelineStage.NEW) as PipelineStage,
               source: 'Import'
             };
           }).filter(l => l !== null);
@@ -189,7 +189,14 @@ export const Leads: React.FC<LeadsProps> = ({ leads, onAddLead, onEditLead, onDe
 const LeadRow: React.FC<{ lead: Lead; onStatusChange?: (s: PipelineStage) => void; onEdit?: () => void; onDelete?: () => void }> = ({ lead, onStatusChange, onEdit, onDelete }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
-  const statusOptions: PipelineStage[] = ['New', 'Contacted', 'Qualified', 'Proposal', 'Won', 'Lost'];
+  const statusOptions: PipelineStage[] = [
+    PipelineStage.NEW,
+    PipelineStage.CONTACTED,
+    PipelineStage.QUALIFIED,
+    PipelineStage.PROPOSAL,
+    PipelineStage.WON,
+    PipelineStage.LOST
+  ];
 
   return (
     <tr className="hover:bg-zinc-50 transition-colors group relative" onMouseLeave={() => { setShowDropdown(false); setShowStatusDropdown(false); }}>
@@ -215,7 +222,7 @@ const LeadRow: React.FC<{ lead: Lead; onStatusChange?: (s: PipelineStage) => voi
           onClick={(e) => { e.stopPropagation(); setShowStatusDropdown(!showStatusDropdown); }}
           className="cursor-pointer hover:opacity-80 transition-opacity inline-block"
         >
-          <Badge color={lead.status === 'Won' ? 'green' : lead.status === 'Lost' ? 'red' : 'gray'}>
+          <Badge color={lead.status === PipelineStage.WON ? 'green' : lead.status === PipelineStage.LOST ? 'red' : 'gray'}>
             {lead.status}
           </Badge>
         </div>
