@@ -1,6 +1,7 @@
-import React from 'react';
-import { LayoutDashboard, Kanban, Users, CreditCard, Settings, LogOut, Command } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { LayoutDashboard, Kanban, Users, CreditCard, Settings, LogOut, Command, User } from 'lucide-react';
 import { ViewState } from '../types';
+import { supabase } from '../src/lib/supabase';
 
 interface SidebarProps {
   currentView: ViewState;
@@ -10,6 +11,19 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, onSignOut, onAddLead }) => {
+  const [profile, setProfile] = useState<{ full_name: string | null, avatar_url: string | null }>({ full_name: 'Loading...', avatar_url: null });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.from('profiles').select('full_name, avatar_url').eq('id', user.id).single();
+        if (data) setProfile(data);
+      }
+    };
+    fetchProfile();
+  }, []); // Re-fetch could be improved with global state, but simple fetch works for now
+
   const menuItems = [
     { id: 'DASHBOARD' as ViewState, icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'PIPELINE' as ViewState, icon: Kanban, label: 'Pipeline' },
@@ -61,11 +75,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, onS
           onClick={onSignOut}
           className="flex items-center space-x-3 p-2 rounded-md hover:bg-zinc-50 transition-colors cursor-pointer group"
         >
-          <div className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center text-zinc-500 font-medium text-xs">
-            JS
+          <div className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center text-zinc-500 font-medium text-xs overflow-hidden">
+            {profile.avatar_url ? (
+              profile.avatar_url.startsWith('http') ? (
+                <img src={profile.avatar_url} alt="Ava" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-lg">{profile.avatar_url}</span>
+              )
+            ) : (
+              <User size={14} />
+            )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-zinc-700 group-hover:text-zinc-900 truncate">Jordan Smith</p>
+            <p className="text-sm font-medium text-zinc-700 group-hover:text-zinc-900 truncate">{profile.full_name || 'User'}</p>
             <p className="text-xs text-zinc-400 truncate">Pro Workspace</p>
           </div>
           <LogOut size={14} className="text-zinc-400 hover:text-zinc-700" />
