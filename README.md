@@ -1,3 +1,6 @@
+
+only for personal use 
+
 Done development 
 
 ## Run Locally
