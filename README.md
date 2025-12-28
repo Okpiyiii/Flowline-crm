@@ -17,8 +17,6 @@
     <a href="#-getting-started">Getting Started</a>
   </p>
 
-  <img src="./docs/screenshot-board.png" alt="GlassCRM Tasks Board View" width="100%" style="border-radius: 10px; border: 1px solid #333;" />
-
   <br />
   <br />
 
