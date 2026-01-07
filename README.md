@@ -153,7 +153,7 @@ Contributions are welcome! Please follow the design guidelines (Glassmorphism, I
 ---
 
 <div align="center">
-<p>Built with ❤️ for productivity.</p>
+<p>Built with ❤️ by Soumya for productivity.</p>
 </div>
 
 ```
